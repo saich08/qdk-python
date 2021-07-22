@@ -58,6 +58,7 @@ function Enable-Conda {
     } else {
         (conda shell.powershell hook) | Out-String | Invoke-Expression;
     }
+    return $true;
 }
 
 function Use-CondaEnv {
@@ -71,7 +72,7 @@ function Use-CondaEnv {
             cmdlet will enable it before activating.
     #>
 
-    Enable-Conda
+    Assert (Enable-Conda) "Failed to detect conda and enable hook"
     # NB: We use the PowerShell cmdlet created by the conda shell hook here
     #     to avoid accidentally using the conda binary.
     Enter-CondaEnvironment $EnvName
@@ -120,3 +121,5 @@ function Get-PythonConfiguration {
 
     $table | Write-Output;
 }
+
+Export-ModuleMember -Function * -Alias *

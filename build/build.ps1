@@ -6,50 +6,76 @@
         Build: Install given packages in given environments
 #>
 
+[cmdletbinding()]
+param(
+    [Parameter(Position = 0, Mandatory = $false)]
+    [string]$buildFile = "$(Join-Path $PSScriptRoot psakefile.ps1)",
 
-param (
-  [string[]] $PackageDirs,
-  [string[]] $EnvNames
+    [Parameter(Position = 1, Mandatory = $false)]
+    [string[]]$taskList = @(),
+
+    [Parameter(Position = 2, Mandatory = $false)]
+    [string]$framework,
+
+    [Parameter(Position = 3, Mandatory = $false)]
+    [switch]$docs = $false,
+
+    [Parameter(Position = 4, Mandatory = $false)]
+    [System.Collections.Hashtable]$parameters = @{},
+
+    [Parameter(Position = 5, Mandatory = $false)]
+    [System.Collections.Hashtable]$properties = @{},
+
+    [Parameter(Position = 6, Mandatory = $false)]
+    [alias("init")]
+    [scriptblock]$initialization = {},
+
+    [Parameter(Position = 7, Mandatory = $false)]
+    [switch]$nologo = $false,
+
+    [Parameter(Position = 8, Mandatory = $false)]
+    [switch]$help = $false,
+
+    [Parameter(Position = 9, Mandatory = $false)]
+    [string]$scriptPath,
+
+    [Parameter(Position = 10, Mandatory = $false)]
+    [switch]$detailedDocs = $false,
+
+    [Parameter(Position = 11, Mandatory = $false)]
+    [switch]$notr = $false
 )
 
-& (Join-Path $PSScriptRoot "set-env.ps1");
+$scriptPath = (Split-Path -parent $MyInvocation.MyCommand.Definition)
+$toolsPath = (Resolve-Path $scriptPath\psmodules)
+$psakeModule = Join-Path -Path $toolsPath -ChildPath 'psake/psake.psd1'
+Import-Module -Name $psakeModule
 
-Import-Module (Join-Path $PSScriptRoot "conda-utils.psm1");
-
-if ($null -eq $PackageDirs) {
-  $ParentPath = Split-Path -parent $PSScriptRoot
-  $PackageDirs = Get-ChildItem -Path $ParentPath -Recurse -Filter "environment.yml" | Select-Object -ExpandProperty Directory | Split-Path -Leaf
-  Write-Host "##[info]No PackageDir. Setting to default '$PackageDirs'"
+if (-not $scriptPath) {
+  $scriptPath = $(Split-Path -Path $MyInvocation.MyCommand.path -Parent)
 }
 
-if ($null -eq $EnvNames) {
-  $EnvNames = $PackageDirs | ForEach-Object {$_.replace("-", "")}
-  Write-Host "##[info]No EnvNames. Setting to default '$EnvNames'"
+$toolsPath = (Join-Path -Path $scriptPath -ChildPath 'psmodules')
+$psakeModulePath = (Join-Path -Path $toolsPath -ChildPath 'psake')
+
+# '[p]sake' is the same as 'psake' but $Error is not polluted
+Remove-Module -Name [p]sake -Verbose:$false
+Import-Module -Name (Join-Path -Path $psakeModulePath -ChildPath 'psake.psd1') -Verbose:$false
+if ($help) {
+  Get-Help -Name Invoke-psake -Full
+  return
 }
 
-# Check that input is valid
-if ($EnvNames.length -ne $PackageDirs.length) {
-  throw "Cannot run build script: '$EnvNames' and '$PackageDirs' lengths don't match"
-}
-
-function Install-Package() {
-  param(
-    [string] $EnvName,
-    [string] $PackageDir
-  )
-  $ParentPath = Split-Path -parent $PSScriptRoot
-  $AbsPackageDir = Join-Path $ParentPath $PackageDir
-  Write-Host "##[info]Install package $AbsPackageDir in development mode for env $EnvName"
-  # Activate env
-  Use-CondaEnv $EnvName
-  # Install package
-  pip install -e $AbsPackageDir
-}
-
-if ($Env:ENABLE_PYTHON -eq "false") {
-  Write-Host "##vso[task.logissue type=warning;]Skipping installing Python packages. Env:ENABLE_PYTHON was set to 'false'."
-} else {
-  for ($i=0; $i -le $PackageDirs.length-1; $i++) {
-    Install-Package -EnvName $EnvNames[$i] -PackageDir $PackageDirs[$i]
+if ($buildFile -and (-not (Test-Path -Path $buildFile))) {
+  $absoluteBuildFile = (Join-Path -Path $scriptPath -ChildPath $buildFile)
+  if (Test-path -Path $absoluteBuildFile) {
+      $buildFile = $absoluteBuildFile
   }
+}
+
+$nologo = $true
+Invoke-psake $buildFile $taskList $framework $docs $parameters $properties $initialization $nologo $detailedDocs $notr
+
+if (!$psake.build_success) {
+  exit 1
 }
