@@ -10,10 +10,6 @@
 
 Include settings.ps1
 
-Task ? -Description "Helper to display task info" {
-    Write-Documentation
-}
-
 Task Use-QDKEnvironment -alias "qdk" -Description "Selects the qdk conda environment" {
     # ./build.sh -t init -properties "@{PackageDirs=@('qdk');EnvNames=@('qdk')}"
     $script:PackageDirs = @("qdk")
