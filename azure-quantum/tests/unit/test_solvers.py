@@ -10,8 +10,8 @@
 import pytest
 from unittest.mock import Mock, patch
 from azure.quantum import Workspace
-from azure.quantum.optimization import Solver, OnlineProblem, Problem
-
+from azure.quantum.optimization import Solver, OnlineProblem, Problem, Term, ProblemType
+from azure.quantum.serialization import ProtoProblem
 
 @pytest.fixture
 def testsolver():
@@ -44,3 +44,24 @@ def test_number_of_solutions_set(testsolver):
     testsolver.set_number_of_solutions(100)
     assert param_name in testsolver.params["params"]
     assert testsolver.params["params"][param_name] == 100
+
+def test_submit_proto_problem(self):
+        problem = Problem(name = "proto_test", content_type="application/x-protobuf")
+        problem.terms = [
+            Term(c=3, indices=[1,0]),
+            Term(c=5, indices=[2,0])
+        ]
+        with patch("azure.quantum.job.base_job.upload_blob") as mock_upload:
+            job = self.testprotosolver.submit(problem)
+        mock_upload.assert_called_once()
+        self.testsolver.workspace.submit_job.assert_called_once()
+    
+def test_throw_exception_proto_problem(self):
+    self.testprotosolver.name = "SimulatedAnnealing"
+    problem = Problem(name = "proto_test", content_type="application/x-protobuf")
+    problem.terms = [
+        Term(c=3, indices=[1,0]),
+        Term(c=5, indices=[2,0])
+    ]
+    with patch("azure.quantum.job.base_job.upload_blob") as mock_upload:
+        self.assertRaises( ValueError, self.testprotosolver.submit, problem)
