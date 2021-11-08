@@ -45,7 +45,7 @@ class BaseJob(abc.ABC):
         name: str,
         target: str,
         input_data: bytes,
-        content_type: str,
+        content_type: str = "application/json",
         blob_name: str = "inputData",
         encoding: str = "",
         job_id: str = None,
@@ -85,7 +85,7 @@ class BaseJob(abc.ABC):
         :param input_params: Input parameters, defaults to None
         :type input_params: Dict[str, Any], optional
         :param input_params: Input params for job
-        :type input_params: Dict[str, Any]
+        :type input_params: Dict[str, Any
         :return: Azure Quantum Job
         :rtype: Job
         """
@@ -106,7 +106,7 @@ class BaseJob(abc.ABC):
             input_data=input_data,
             content_type=content_type,
             blob_name=blob_name,
-            encoding=encoding
+            encoding=encoding,
         )
 
         # Create and submit job
@@ -208,7 +208,7 @@ class BaseJob(abc.ABC):
     def upload_input_data(
         container_uri: str,
         input_data: bytes,
-        content_type: str,
+        content_type: str = "application/json",
         blob_name: str = "inputData",
         encoding: str = "",
         return_sas_token: bool = False
