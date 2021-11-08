@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta
 from common import QuantumTestBase, ZERO_UID
 from azure.quantum import Job
 from azure.quantum.optimization import Problem, ProblemType, Term, SlcTerm
+from azure.quantum.serialization import ProtoProblem
 import azure.quantum.optimization as microsoft
 import azure.quantum.target.oneqbit as oneqbit
 import azure.quantum.target.toshiba as toshiba
@@ -326,7 +327,7 @@ class TestJob(QuantumTestBase):
             job = solver.submit(problem)
             # Check if problem can be successfully downloaded and deserialized
             problem_as_json = job.download_data(job.details.input_data_uri)
-            downloaded_problem = Problem.deserialize(problem_as_json=problem_as_json)
+            downloaded_problem = Problem.deserialize(input_problem = problem_as_json)
 
             actual = downloaded_problem.serialize()
             expected = problem.serialize()
