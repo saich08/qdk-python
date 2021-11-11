@@ -49,6 +49,10 @@ class RangeSchedule:
                 '"schedule_type" must be "linear" or "geometric"!'
             )
 
+proto_valid_solver_names = [
+    "PopulationAnnealing",
+    "SubstochasticMonteCarlo"
+]
 
 class Solver(Target):
     def __init__(
@@ -238,6 +242,13 @@ are not compressed with gzip encoding. Ignoring compress flag.")
                     f"with problem type {problem.problem_type};"
                     f"Try PopulationAnnealing or SubstochasticMonteCarlo."
                 )
+        if problem.content_type == "application/x-protobuf":
+            if not self.supports_protobuf() and self.name not in proto_valid_solver_names:
+                raise ValueError(
+                    f"Solver `{self.name} type is not compatible "
+                    f"for serialization with protobuf; "
+                    f"Try PopulationAnnealing or SubstochasticMonteCarlo."
+                )
 
     def supports_grouped_terms(self):
         """
@@ -245,7 +256,7 @@ are not compressed with gzip encoding. Ignoring compress flag.")
         This should be overridden by Solver subclasses which do support grouped terms.
         """
         return False
-
+    
     class ScheduleEvolution(Enum):
         INCREASING = 1
         DECREASING = 2
